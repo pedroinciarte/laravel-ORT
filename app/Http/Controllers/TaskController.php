@@ -25,4 +25,17 @@ class TaskController extends Controller
         ], 201);
     }
     
+    public function getAll(Request $request)
+    {
+        $tasks = $request->user()
+            ->tasks()
+            ->select('id', 'title', 'description', 'state', 'due_date')
+            ->latest()
+            ->get();
+    
+        return response()->json([
+            'tasks' => $tasks,
+        ]);
+    }
+
 }
