@@ -38,7 +38,7 @@ class TaskController extends Controller
         ]);
     }
 
-    public function getTask(Request $request, Task $task)
+    public function get(Request $request, Task $task)
     {
         if ($task->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized.'], 403);
@@ -55,4 +55,24 @@ class TaskController extends Controller
         ]);
     }
 
+    public function update(Request $request, Task $task)
+    {
+        if ($task->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $validated = $request->validate([
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string'],
+            'due_date' => ['sometimes', 'nullable', 'date'],
+            'state' => ['sometimes', 'in:pending,completed'],
+        ]);
+
+        $task->update($validated);
+
+        return response()->json([
+            'message' => 'Task updated successfully.',
+            'task' => $task->only(['id', 'title', 'description', 'due_date', 'state']),
+        ]);
+    }
 }
