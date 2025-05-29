@@ -7,5 +7,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tasks', [TaskController::class, 'store']);
     Route::get('/tasks', [TaskController::class, 'getAll']);
     Route::get('/tasks/{task}', [TaskController::class, 'get']);
-    Route::put('/tasks/{task}', [TaskController::class, 'update']);
+    Route::patch('/tasks/{task}', [TaskController::class, 'update']);
 });
