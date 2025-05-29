@@ -38,4 +38,21 @@ class TaskController extends Controller
         ]);
     }
 
+    public function getTask(Request $request, Task $task)
+    {
+        if ($task->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        return response()->json([
+            'task' => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'state' => $task->state,
+                'due_date' => $task->due_date,
+            ]
+        ]);
+    }
+
 }
