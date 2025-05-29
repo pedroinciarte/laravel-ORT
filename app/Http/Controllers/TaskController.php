@@ -75,4 +75,31 @@ class TaskController extends Controller
             'task' => $task->only(['id', 'title', 'description', 'due_date', 'state']),
         ]);
     }
+
+    public function complete(Task $task, Request $request)
+    {
+        if ($task->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $task->update(['state' => 'completed']);
+
+        return response()->json([
+            'message' => 'Task marked as completed.',
+            'task' => $task,
+        ]);
+    }
+
+    public function destroy(Task $task, Request $request)
+    {
+        if ($task->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $task->delete();
+
+        return response()->json(['message' => 'Task deleted successfully.']);
+    }
+
+
 }
