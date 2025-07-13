@@ -1,0 +1,54 @@
+name: Backend CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  laravel-backend:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Smoke Test - Fail Fast
+        run: |
+          cp .env.example .env
+          php artisan config:cache
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run PHP Linter (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Run PHP Static Analysis (PHPStan)
+        run: vendor/bin/phpstan analyse
+
+      - name: Run Tests with Coverage
+        run: php artisan test --coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: laravel-coverage
+          path: storage/framework/testing/discover
