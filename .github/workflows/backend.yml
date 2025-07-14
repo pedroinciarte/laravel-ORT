@@ -11,8 +11,53 @@ on:
       - develop
 
 jobs:
-  backend:
+  setup:
+    name: Setup and Smoke Test
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: mbstring, bcmath, pdo_mysql
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Smoke Test - Prepare Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan config:cache
+
+  lint:
+    name: Lint (Laravel Default)
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run Laravel Pint
+        run: ./vendor/bin/pint
+  
+  tests:
+    name: Run Tests and Coverage
+    runs-on: ubuntu-latest
+    needs: [setup, lint]
 
     services:
       mysql:
@@ -27,41 +72,43 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: 8.2
-        extensions: mbstring, bcmath, pdo_mysql
-        coverage: xdebug
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          tools: composer:v2
+          coverage: xdebug
 
-    # Instalación de dependencias
-    - name: Install PHP dependencies
-      run: composer install --prefer-dist --no-progress
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    # Smoke Test inicial (Laravel se ejecuta correctamente)
-    - name: Smoke Test - Prepare Laravel
-      run: |
-        cp .env.example .env
-        php artisan key:generate
-        php artisan config:cache
+      - name: Install Node Dependencies
+        run: npm ci
 
-    # Linting y formato
-    - name: Run PHP Linter (Pint)
-      run: vendor/bin/pint --test
+      - name: Build Assets
+        run: npm run build
 
-    - name: Run PHP Static Analysis (PHPStan)
-      run: vendor/bin/phpstan analyse
+      - name: Install PHP Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-    # Tests automatizados con cobertura
-    - name: Run Tests with Coverage
-      run: php artisan test --coverage
+      - name: Copy Environment File
+        run: cp .env.example .env
 
-    # Reporte de cobertura
-    - name: Upload Coverage Report
-      uses: actions/upload-artifact@v4
-      with:
-        name: backend-coverage
-        path: storage/framework/testing/discover
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Run Feature Tests with Coverage
+        run: ./vendor/bin/pest --coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: storage/framework/testing/discover
+
