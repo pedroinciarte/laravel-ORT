@@ -104,7 +104,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Run Feature Tests with Coverage
-        run: ./vendor/bin/pest --coverage
+        run: ./vendor/bin/pest --coverage tests/Feature
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
