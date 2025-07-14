@@ -110,5 +110,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
-          path: storage/framework/testing/discover
+          path: coverage
 
